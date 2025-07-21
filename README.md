@@ -1,5 +1,5 @@
 # SeeIn Backend (FastAPI)
-
+인하공전 해커톤 3팀 시인 프로젝트 백엔드
 ## 개발 환경 세팅
 1. 가상환경 활성화
 source venv/Scripts/activate
