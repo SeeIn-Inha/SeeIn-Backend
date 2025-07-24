@@ -8,6 +8,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
+
 @router.get("/example")
 async def example_route():
-    return {"message": "테스트"}
+    return {"message": "get으로 등록. 라우터 공부할 py"}
