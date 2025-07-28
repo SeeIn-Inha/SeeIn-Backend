@@ -114,9 +114,9 @@ def extract_receipt_info_with_gpt(ocr_text_content: str, openai_api_key: str) ->
     정보를 찾을 수 없는 경우 해당 필드는 **null**로 처리해주세요.
 
     필요한 정보는 다음과 같습니다:
-    - **상점명 (store_name)**: 영수증 발행 상점의 이름
-    - **거래 날짜 (transaction_date)**: 거래가 발생한 날짜 (YYYY-MM-DD 형식)
-    - **거래 시간 (transaction_time)**: 거래가 발생한 시간 (HH:MM 형식)
+    - **구매처 (store_name)**: 영수증 발행 상점의 이름
+    - **결제 날짜 (transaction_date)**: 거래가 발생한 날짜 (YYYY-MM-DD 형식)
+    - **결제 시간 (transaction_time)**: 거래가 발생한 시간 (HH:MM 형식)
     - **총 결제 금액 (total_amount)**: 최종 결제된 금액 (숫자만, 소수점 가능)
     - **결제 항목 (items)**: 구매한 각 항목의 목록. 각 항목은 다음을 포함합니다:
         - **이름 (name)**: 상품 또는 서비스의 이름
@@ -126,15 +126,15 @@ def extract_receipt_info_with_gpt(ocr_text_content: str, openai_api_key: str) ->
 
     예시 JSON 형식:
     {{
-        "store_name": "ABC 마트",
-        "transaction_date": "2024-07-20",
-        "transaction_time": "15:30",
-        "total_amount": 25500.0,
-        "items": [
+        "구매처": "ABC 마트",
+        "결제 날짜": "2024-07-20",
+        "결제 시간": "15:30",
+        "총 결재 금액": 25500.0,
+        "결제 항목": [
             {{"name": "바나나", "price": 3000.0, "quantity": 2}},
             {{"name": "사과", "price": 5000.0, "quantity": 1}}
         ],
-        "payment_method": "신용카드"
+        "결제 수단": "신용카드"
     }}
 
     영수증 텍스트:
