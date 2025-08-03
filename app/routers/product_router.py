@@ -25,18 +25,40 @@ class ProductInfo(BaseModel):
     brand: str
     summary: str = ""
 
-
 @router.post("/recommend-product/")
-def recommend_product(product: ProductInfo):
+async def recommend_product(product: ProductInfo):
     try:
+        print(f"[RECOMMEND] 입력 상품 - 이름: {product.name}, 브랜드: {product.brand}, 요약: {product.summary}")
+
         result = generate_product_recommendation(
             name=product.name,
             brand=product.brand,
-            flavor=product.summary  # 혹은 summary 그대로 넘겨도 OK
+            flavor=product.summary
         )
-        return {"success": True, "result": result}
+
+        if result and result.strip():
+            return {"success": True, "result": result.strip()}
+        else:
+            return {"success": False, "error": "추천 응답이 비어 있습니다."}
+
     except Exception as e:
+        print(f"[RECOMMEND ERROR] {e}")
         return {"success": False, "error": str(e)}
+
+#
+# @router.post("/recommend-product/")
+# def recommend_product(product: ProductInfo):
+#     try:
+#         result = generate_product_recommendation(
+#             name=product.name,
+#             brand=product.brand,
+#             flavor=product.summary  # 혹은 summary 그대로 넘겨도 OK
+#         )
+#         return {"success": True, "result": result}
+#     except Exception as e:
+#         return {"success": False, "error": str(e)}
+
+
 
 @router.post("/analyze-and-recommend-product/")
 async def analyze_and_recommend_product(file: UploadFile = File(...)):
