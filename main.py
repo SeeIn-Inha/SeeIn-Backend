@@ -9,9 +9,14 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
+#상품분석라우터
+from app.routers import product_router
+ 
+
+
 # .env 파일 로드 (이곳이 유일한 load_dotenv 호출 지점)
 # load_dotenv() # 기존 라인 (삭제 또는 주석 처리)
-load_dotenv(dotenv_path='key.env')  # <--- 이 라인으로 변경합니다.
+load_dotenv(dotenv_path='.env')  # <--- 이 라인으로 변경합니다.
 
 # 환경 변수에서 API 키 로드 (main.py에서 직접 로드)
 CLOVA_OCR_URL = os.getenv("CLOVA_OCR_URL")
@@ -30,6 +35,11 @@ from app.services.receipt_analyzer import call_clova_ocr, extract_texts_from_clo
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI()
+
+
+#상품분석 라우터
+app.include_router(product_router.router)
+
 
 # 임시 파일 저장을 위한 디렉토리 설정
 UPLOAD_DIR = "uploaded_images"
