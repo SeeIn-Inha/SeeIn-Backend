@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.product_analysis_service import analyze_product_image
 from app.services.product_recommendation_service import generate_product_recommendation
 from pydantic import BaseModel
+from app.services.product_combined_service import analyze_and_recommend
 
 router = APIRouter()
 
@@ -36,3 +37,8 @@ def recommend_product(product: ProductInfo):
         return {"success": True, "result": result}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+@router.post("/analyze-and-recommend-product/")
+async def analyze_and_recommend_product(file: UploadFile = File(...)):
+    result = await analyze_and_recommend(file)
+    return result
