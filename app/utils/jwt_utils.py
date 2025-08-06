@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 import os
 
 try:
-    from jose import JWTError, jwt
-    from dotenv import load_dotenv
+    from jose import JWTError, jwt  # type: ignore
+    from dotenv import load_dotenv  # type: ignore
     load_dotenv()
     JOSE_AVAILABLE = True
 except ImportError:

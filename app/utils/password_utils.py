@@ -1,9 +1,5 @@
-"""
-비밀번호 해싱 및 검증 유틸리티
-"""
-
 try:
-    from passlib.context import CryptContext
+    from passlib.context import CryptContext  # type: ignore
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     PASSLIB_AVAILABLE = True
 except ImportError:
@@ -11,7 +7,6 @@ except ImportError:
     PASSLIB_AVAILABLE = False
 
 def hash_password(password: str) -> str:
-    """비밀번호를 안전하게 해싱합니다."""
     if not PASSLIB_AVAILABLE:
         raise ImportError("passlib 패키지가 필요합니다. pip install passlib[bcrypt]를 실행해주세요.")
     
@@ -21,7 +16,6 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """평문 비밀번호와 해싱된 비밀번호를 비교합니다."""
     if not PASSLIB_AVAILABLE:
         raise ImportError("passlib 패키지가 필요합니다. pip install passlib[bcrypt]를 실행해주세요.")
     
@@ -34,16 +28,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 def check_dependencies() -> dict:
-    """필요한 패키지들의 설치 상태를 확인합니다."""
     status = {
         "passlib": PASSLIB_AVAILABLE,
         "bcrypt": PASSLIB_AVAILABLE
     }
     
     if not PASSLIB_AVAILABLE:
-        print("❌ passlib 패키지가 설치되지 않았습니다.")
-        print("   pip install passlib[bcrypt]를 실행해주세요.")
+        print("passlib 패키지가 설치되지 않았습니다.")
+        print("pip install passlib[bcrypt]를 실행해주세요.")
     else:
-        print("✅ passlib 패키지가 정상적으로 설치되어 있습니다.")
+        print("passlib 패키지가 정상적으로 설치되어 있습니다.")
     
     return status
