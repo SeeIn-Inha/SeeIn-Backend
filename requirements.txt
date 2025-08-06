@@ -20,3 +20,24 @@ tqdm==4.67.1
 typing-inspection==0.4.1
 typing_extensions==4.14.1
 uvicorn==0.35.0
+
+# JWT 인증
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 데이터베이스
+sqlalchemy==2.0.23
+alembic==1.12.1
+
+# STT (음성 인식)
+speechrecognition==3.10.0
+pyaudio==0.2.11
+
+# 환경 변수
+python-dotenv==1.0.0
+
+# CORS
+fastapi-cors==0.0.6
+
+# 이메일 검증
+email-validator==2.1.0
