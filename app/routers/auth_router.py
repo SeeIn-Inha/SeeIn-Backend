@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.user_model import UserCreate, UserLogin, UserResponse, Token
 from app.services.auth_service import register_user, authenticate_user, get_user_by_email
+from app.utils.jwt_utils import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["인증"])
 
@@ -27,8 +28,25 @@ async def login(user: UserLogin):
     return result
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(email: str):
-    """현재 사용자 정보 조회"""
+async def get_current_user_info(current_user_email: str = Depends(get_current_user)):
+    """현재 사용자 정보 조회 (인증 필요)"""
+    user = get_user_by_email(current_user_email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="사용자를 찾을 수 없습니다."
+        )
+    
+    return UserResponse(
+        email=user.email,
+        username=user.username,
+        is_active=user.is_active,
+        created_at=user.created_at
+    )
+
+@router.get("/profile/{email}", response_model=UserResponse)
+async def get_user_profile(email: str):
+    """사용자 프로필 조회 (인증 불필요)"""
     user = get_user_by_email(email)
     if user is None:
         raise HTTPException(

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth_router
+from app.routers import auth_router, protected_router
 
 app = FastAPI(
     title="SeeIn Backend API",
@@ -19,6 +19,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(auth_router.router)
+app.include_router(protected_router.router)
 
 @app.get("/")
 def root():
