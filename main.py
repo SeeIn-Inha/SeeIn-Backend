@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from app.routers import auth_router, protected_router
 
 app = FastAPI(
@@ -32,3 +33,53 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/debug/jwt")
+def debug_jwt():
+    """JWT 설정 디버깅 정보"""
+    from app.utils.jwt_utils import SECRET_KEY, ALGORITHM, EXPIRE_MINUTES, check_dependencies
+    return {
+        "SECRET_KEY": SECRET_KEY[:10] + "..." if len(SECRET_KEY) > 10 else SECRET_KEY,
+        "ALGORITHM": ALGORITHM,
+        "EXPIRE_MINUTES": EXPIRE_MINUTES,
+        "dependencies": check_dependencies()
+    }
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    # 인증이 필요하지 않은 엔드포인트들
+    public_endpoints = [
+        "/",
+        "/health",
+        "/auth/register",
+        "/auth/login",
+        "/auth/profile/{email}"
+    ]
+    
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if method in ["get", "post", "put", "delete", "patch"]:
+                # 공개 엔드포인트가 아닌 경우에만 보안 적용
+                if path not in public_endpoints and not path.startswith("/auth/profile/"):
+                    openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi_schema = custom_openapi()
