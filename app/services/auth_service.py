@@ -1,13 +1,13 @@
 from app.models.user_model import UserCreate, UserLogin, UserInDB, UserResponse, Token
+from app.models.database_models import User
 from app.utils.password_utils import hash_password, verify_password
 from app.utils.jwt_utils import create_access_token
 from app.utils.email_utils import validate_email, sanitize_email
+from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
-fake_user_db = {}
-
-def register_user(user: UserCreate) -> Optional[UserResponse]:
+def register_user(db: Session, user: UserCreate) -> Optional[UserResponse]:
     """사용자 등록"""
     print(f"회원가입 시도: {user.email}")
     
@@ -20,7 +20,9 @@ def register_user(user: UserCreate) -> Optional[UserResponse]:
         print("이메일 정리 실패")
         raise ValueError("이메일을 처리할 수 없습니다.")
     
-    if cleaned_email in fake_user_db:
+    # 기존 사용자 확인
+    existing_user = db.query(User).filter(User.email == cleaned_email).first()
+    if existing_user:
         print("이미 존재하는 사용자")
         return None
     
@@ -28,26 +30,29 @@ def register_user(user: UserCreate) -> Optional[UserResponse]:
         hashed = hash_password(user.password)
         print(f"비밀번호 해싱 성공: {hashed[:20]}...")
         
-        user_in_db = UserInDB(
+        # 데이터베이스에 사용자 저장
+        db_user = User(
             email=cleaned_email,
             hashed_password=hashed,
-            username=user.username,
-            created_at=datetime.utcnow()
+            username=user.username
         )
-        fake_user_db[cleaned_email] = user_in_db
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
         print(f"사용자 저장 완료: {cleaned_email}")
         
         return UserResponse(
-            email=user_in_db.email,
-            username=user_in_db.username,
-            is_active=user_in_db.is_active,
-            created_at=user_in_db.created_at
+            email=db_user.email,
+            username=db_user.username,
+            is_active=db_user.is_active,
+            created_at=db_user.created_at
         )
     except Exception as e:
+        db.rollback()
         print(f"사용자 등록 오류: {e}")
         return None
 
-def authenticate_user(user: UserLogin) -> Optional[Token]:
+def authenticate_user(db: Session, user: UserLogin) -> Optional[Token]:
     """사용자 인증"""
     print(f"로그인 시도: {user.email}")
     
@@ -62,9 +67,9 @@ def authenticate_user(user: UserLogin) -> Optional[Token]:
             return None
         
         print(f"정리된 이메일: {cleaned_email}")
-        print(f"저장된 사용자들: {list(fake_user_db.keys())}")
         
-        db_user = fake_user_db.get(cleaned_email)
+        # 데이터베이스에서 사용자 조회
+        db_user = db.query(User).filter(User.email == cleaned_email).first()
         if not db_user:
             print("사용자를 찾을 수 없음")
             return None
@@ -85,9 +90,9 @@ def authenticate_user(user: UserLogin) -> Optional[Token]:
         print(f"사용자 인증 오류: {e}")
         return None
 
-def get_user_by_email(email: str) -> Optional[UserInDB]:
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """이메일로 사용자 조회"""
     cleaned_email = sanitize_email(email)
     if not cleaned_email:
         return None
-    return fake_user_db.get(cleaned_email)
+    return db.query(User).filter(User.email == cleaned_email).first()

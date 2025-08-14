@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from app.routers import auth_router, protected_router, stt_router       
+from app.routers import auth_router, protected_router, stt_router
+from app.core.init_db import init_db       
 
 app = FastAPI(
     title="SeeIn Backend API",
     description="JWT 기반 인증과 STT 기능을 제공하는 API",
     version="1.0.0"
 )
+
+# 애플리케이션 시작 시 데이터베이스 초기화
+@app.on_event("startup")
+async def startup_event():
+    init_db()
 
 # CORS 설정
 app.add_middleware(
