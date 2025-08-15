@@ -1,16 +1,14 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, status
 from app.services.stt_service import transcribe_audio, ALLOWED_EXTS
-from app.utils.jwt_utils import get_current_user
 import os
 
 router = APIRouter(prefix="/stt", tags=["음성 인식"])
 
 @router.post("/transcribe")
 async def transcribe_speech(
-    file: UploadFile = File(...),
-    current_user_email: str = Depends(get_current_user)
+    file: UploadFile = File(...)
 ):
-    """음성 파일을 텍스트로 변환 (인증 필요)"""
+    """음성 파일을 텍스트로 변환 (공개 엔드포인트)"""
     
     # 파일 확장자 검증
     file_ext = os.path.splitext(file.filename)[1].lower()
@@ -36,8 +34,7 @@ async def transcribe_speech(
         
         return {
             "transcription": transcription,
-            "filename": file.filename,
-            "user": current_user_email
+            "filename": file.filename
         }
         
     except Exception as e:

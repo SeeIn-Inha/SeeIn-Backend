@@ -1,4 +1,4 @@
-from app.models.user_model import UserCreate, UserLogin, UserInDB, UserResponse, Token
+from app.models.user_model import UserCreate, UserLogin, UserInDB, UserResponse, Token, UserUpdate, UserPasswordUpdate, DeleteResponse
 from app.models.database_models import User
 from app.utils.password_utils import hash_password, verify_password
 from app.utils.jwt_utils import create_access_token
@@ -96,3 +96,111 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
     if not cleaned_email:
         return None
     return db.query(User).filter(User.email == cleaned_email).first()
+
+def update_user_info(db: Session, email: str, user_update: UserUpdate) -> Optional[UserResponse]:
+    """사용자 정보 수정 (닉네임, 이메일)"""
+    print(f"사용자 정보 수정 시도: {email}")
+    
+    try:
+        # 현재 사용자 조회
+        current_user = get_user_by_email(db, email)
+        if not current_user:
+            print("사용자를 찾을 수 없음")
+            return None
+        
+        # 이메일 변경이 있는 경우
+        if user_update.email and user_update.email != current_user.email:
+            if not validate_email(user_update.email):
+                print("새 이메일 검증 실패")
+                raise ValueError("유효하지 않은 이메일 형식입니다.")
+            
+            cleaned_new_email = sanitize_email(user_update.email)
+            if not cleaned_new_email:
+                print("새 이메일 정리 실패")
+                raise ValueError("새 이메일을 처리할 수 없습니다.")
+            
+            # 새 이메일이 이미 사용 중인지 확인
+            existing_user = db.query(User).filter(User.email == cleaned_new_email).first()
+            if existing_user:
+                print("새 이메일이 이미 사용 중")
+                raise ValueError("이미 사용 중인 이메일입니다.")
+            
+            current_user.email = cleaned_new_email
+            print(f"이메일 변경: {email} -> {cleaned_new_email}")
+        
+        # 닉네임 변경이 있는 경우
+        if user_update.username is not None:
+            current_user.username = user_update.username
+            print(f"닉네임 변경: {current_user.username}")
+        
+        db.commit()
+        db.refresh(current_user)
+        print("사용자 정보 수정 완료")
+        
+        return UserResponse(
+            email=current_user.email,
+            username=current_user.username,
+            is_active=current_user.is_active,
+            created_at=current_user.created_at
+        )
+    except Exception as e:
+        db.rollback()
+        print(f"사용자 정보 수정 오류: {e}")
+        raise e
+
+def update_user_password(db: Session, email: str, password_update: UserPasswordUpdate) -> bool:
+    """사용자 비밀번호 변경"""
+    print(f"비밀번호 변경 시도: {email}")
+    
+    try:
+        # 현재 사용자 조회
+        current_user = get_user_by_email(db, email)
+        if not current_user:
+            print("사용자를 찾을 수 없음")
+            return False
+        
+        # 현재 비밀번호 검증
+        if not verify_password(password_update.current_password, current_user.hashed_password):
+            print("현재 비밀번호 검증 실패")
+            return False
+        
+        # 새 비밀번호 해싱
+        new_hashed_password = hash_password(password_update.new_password)
+        current_user.hashed_password = new_hashed_password
+        
+        db.commit()
+        print("비밀번호 변경 완료")
+        return True
+    except Exception as e:
+        db.rollback()
+        print(f"비밀번호 변경 오류: {e}")
+        return False
+
+def delete_user(db: Session, email: str, password: str) -> bool:
+    """사용자 회원 탈퇴"""
+    print(f"회원 탈퇴 시도: {email}")
+    
+    try:
+        # 현재 사용자 조회
+        current_user = get_user_by_email(db, email)
+        if not current_user:
+            print("사용자를 찾을 수 없음")
+            return False
+        
+        # 비밀번호 검증
+        if not verify_password(password, current_user.hashed_password):
+            print("비밀번호 검증 실패")
+            return False
+        
+        # 사용자 삭제 (실제 삭제 또는 비활성화)
+        # 보안상 실제 삭제 대신 비활성화하는 것을 권장
+        current_user.is_active = False
+        # 만약 실제 삭제를 원한다면: db.delete(current_user)
+        
+        db.commit()
+        print("회원 탈퇴 완료")
+        return True
+    except Exception as e:
+        db.rollback()
+        print(f"회원 탈퇴 오류: {e}")
+        return False

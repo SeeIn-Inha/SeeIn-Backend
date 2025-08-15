@@ -11,6 +11,17 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+
+class UserPasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+class UserDelete(BaseModel):
+    password: str
+
 class UserInDB(BaseModel):
     email: str
     hashed_password: str
@@ -30,3 +41,6 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class DeleteResponse(BaseModel):
+    message: str
