@@ -75,15 +75,14 @@ def custom_openapi():
         "/",
         "/health",
         "/auth/register",
-        "/auth/login",
-        "/auth/profile/{email}"
+        "/auth/login"
     ]
     
     for path in openapi_schema["paths"]:
         for method in openapi_schema["paths"][path]:
             if method in ["get", "post", "put", "delete", "patch"]:
                 # 공개 엔드포인트가 아닌 경우에만 보안 적용
-                if path not in public_endpoints and not path.startswith("/auth/profile/"):
+                if path not in public_endpoints:
                     openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
     
     app.openapi_schema = openapi_schema

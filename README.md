@@ -50,18 +50,20 @@ uvicorn main:app --reload
 
 ## API 엔드포인트
 
-### 인증 관련 (`/auth`)
+### 공개 엔드포인트 (인증 불필요)
+- `GET /` - API 정보
+- `GET /health` - 서버 상태 확인
 - `POST /auth/register` - 회원가입
 - `POST /auth/login` - 로그인
-- `GET /auth/me` - 현재 사용자 정보 (인증 필요)
-- `GET /auth/profile/{email}` - 사용자 프로필 조회
-- `PUT /auth/update` - 사용자 정보 수정 (닉네임, 이메일) (인증 필요)
-- `PUT /auth/change-password` - 비밀번호 변경 (인증 필요)
-- `DELETE /auth/delete` - 회원 탈퇴 (인증 필요)
+- `POST /stt/transcribe` - 음성 인식 (STT)
+- `GET /stt/supported-formats` - 지원 오디오 형식
 
-### 음성 인식 관련 (`/stt`)
-- `POST /stt/transcribe` - 음성 파일을 텍스트로 변환 (인증 필요)
-- `GET /stt/supported-formats` - 지원되는 오디오 형식 조회
+### 보호된 엔드포인트 (인증 필요)
+- `GET /auth/me` - 현재 사용자 정보
+- `PUT /auth/update` - 사용자 정보 수정
+- `PUT /auth/change-password` - 비밀번호 변경
+- `DELETE /auth/delete` - 회원 탈퇴
+- `GET /secure/me` - 보안 테스트
 
 ## 사용자 관리 기능 상세
 

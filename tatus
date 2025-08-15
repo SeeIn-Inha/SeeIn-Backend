@@ -1,0 +1,5 @@
+DEPLOYMENT.md
+README.md
+app/routers/auth_router.py
+main.py
+seein.db
