@@ -25,3 +25,14 @@ typing-inspection==0.4.1
 typing_extensions==4.14.1
 urllib3==2.5.0
 uvicorn==0.35.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+sqlalchemy==2.0.23
+alembic==1.12.1
+speechrecognition==3.10.0
+pyaudio==0.2.11
+python-dotenv==1.0.0
+fastapi-cors==0.0.6
+email-validator==2.1.0
+pydub==0.25.1
+requests==2.32.4

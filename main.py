@@ -1,4 +1,4 @@
-# your_project/main.py
+# /main.py
 
 import uuid
 import os
@@ -7,39 +7,55 @@ import json
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from dotenv import load_dotenv
 
-#상품분석라우터
-from app.routers import product_router
- 
+from app.routers import auth_router, protected_router, stt_router, product_router
+from app.core.init_db import init_db
+from app.services.receipt_analyzer import call_clova_ocr, extract_texts_from_clova, extract_receipt_info_with_gpt
 
 
-# .env 파일 로드 (이곳이 유일한 load_dotenv 호출 지점)
-# load_dotenv() # 기존 라인 (삭제 또는 주석 처리)
-load_dotenv(dotenv_path='.env')  # <--- 이 라인으로 변경합니다.
+# .env 파일 로드
+load_dotenv(dotenv_path='.env')
 
-# 환경 변수에서 API 키 로드 (main.py에서 직접 로드)
+# 환경 변수에서 API 키 로드
 CLOVA_OCR_URL = os.getenv("CLOVA_OCR_URL")
 CLOVA_OCR_SECRET = os.getenv("CLOVA_OCR_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# API 키들이 제대로 로드되었는지 확인 (앱 시작 전 필수 점검)
+# API 키들이 제대로 로드되었는지 확인
 if not all([CLOVA_OCR_URL, CLOVA_OCR_SECRET, OPENAI_API_KEY]):
     print("FATAL ERROR: 필수 API 키(CLOVA_OCR_URL, CLOVA_OCR_SECRET, OPENAI_API_KEY)가 .env 파일에 설정되지 않았습니다.")
     print("FastAPI 애플리케이션 시작을 중단합니다.")
     raise ValueError("필수 API 키가 .env 파일에 설정되지 않았습니다.")
 
-# services 폴더에서 receipt_analyzer 모듈 임포트
-# 프로젝트 구조에 따라 'app.services'로 임포트합니다.
-from app.services.receipt_analyzer import call_clova_ocr, extract_texts_from_clova, extract_receipt_info_with_gpt
 
-# FastAPI 앱 인스턴스 생성
-app = FastAPI()
+app = FastAPI(
+    title="SeeIn Backend API",
+    description="JWT 기반 인증과 STT 기능을 제공하는 API",
+    version="1.0.0"
+)
 
+# 애플리케이션 시작 시 데이터베이스 초기화
+@app.on_event("startup")
+async def startup_event():
+    init_db()
 
-#상품분석 라우터
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 라우터 등록
+app.include_router(auth_router.router)
+app.include_router(protected_router.router)
+app.include_router(stt_router.router)
 app.include_router(product_router.router)
-
 
 # 임시 파일 저장을 위한 디렉토리 설정
 UPLOAD_DIR = "uploaded_images"
@@ -47,9 +63,63 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @app.get("/")
-def read_root():
-    return {"message": "SeeIn Backend API - Welcome!"}
+def root():
+    return {
+        "message": "SeeIn Backend API",
+        "version": "1.0.0",
+        "features": ["JWT Authentication", "STT (Speech Recognition)"]
+    }
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+@app.get("/debug/jwt")
+def debug_jwt():
+    """JWT 설정 디버깅 정보"""
+    from app.utils.jwt_utils import SECRET_KEY, ALGORITHM, EXPIRE_MINUTES, check_dependencies
+    return {
+        "SECRET_KEY": SECRET_KEY[:10] + "..." if len(SECRET_KEY) > 10 else SECRET_KEY,
+        "ALGORITHM": ALGORITHM,
+        "EXPIRE_MINUTES": EXPIRE_MINUTES,
+        "dependencies": check_dependencies()
+    }
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    # 인증이 필요하지 않은 엔드포인트들
+    public_endpoints = [
+        "/",
+        "/health",
+        "/auth/register",
+        "/auth/login"
+    ]
+    
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if method in ["get", "post", "put", "delete", "patch"]:
+                if path not in public_endpoints:
+                    openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi_schema = custom_openapi()
 
 @app.post("/analyze-receipt/")
 async def analyze_receipt_endpoint(image: UploadFile = File(...)):
