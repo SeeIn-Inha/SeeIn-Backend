@@ -1,0 +1,64 @@
+try:
+    from passlib.context import CryptContext  # type: ignore
+    # bcrypt 버전 호환성 문제 해결을 위한 설정
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+    PASSLIB_AVAILABLE = True
+except ImportError:
+    pwd_context = None
+    PASSLIB_AVAILABLE = False
+except Exception as e:
+    print(f"Passlib 초기화 오류 (무시됨): {e}")
+    # 대체 방법으로 직접 bcrypt 사용
+    try:
+        import bcrypt
+        pwd_context = None
+        PASSLIB_AVAILABLE = True
+    except ImportError:
+        pwd_context = None
+        PASSLIB_AVAILABLE = False
+
+def hash_password(password: str) -> str:
+    if not PASSLIB_AVAILABLE:
+        raise ImportError("passlib 또는 bcrypt 패키지가 필요합니다. pip install passlib[bcrypt]를 실행해주세요.")
+    
+    if not password:
+        raise ValueError("비밀번호는 비어있을 수 없습니다.")
+    
+    if pwd_context:
+        return pwd_context.hash(password)
+    else:
+        # 대체 방법: 직접 bcrypt 사용
+        import bcrypt
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not PASSLIB_AVAILABLE:
+        raise ImportError("passlib 또는 bcrypt 패키지가 필요합니다. pip install passlib[bcrypt]를 실행해주세요.")
+    
+    if not plain_password or not hashed_password:
+        return False
+    
+    try:
+        if pwd_context:
+            return pwd_context.verify(plain_password, hashed_password)
+        else:
+            # 대체 방법: 직접 bcrypt 사용
+            import bcrypt
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
+
+def check_dependencies() -> dict:
+    status = {
+        "passlib": PASSLIB_AVAILABLE,
+        "bcrypt": PASSLIB_AVAILABLE
+    }
+    
+    if not PASSLIB_AVAILABLE:
+        print("passlib 패키지가 설치되지 않았습니다.")
+        print("pip install passlib[bcrypt]를 실행해주세요.")
+    else:
+        print("passlib 패키지가 정상적으로 설치되어 있습니다.")
+    
+    return status
